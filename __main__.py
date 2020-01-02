@@ -19,6 +19,13 @@ def main():
     PINK = (230, 50, 230)
     RED = (255, 0, 0)
     # Конец цветов
+
+    # Коды клавиш
+    KEY_W = 119
+    KEY_A = 97
+    KEY_S = 115
+    KEY_D = 100
+    # Конец кодов клавиш
     '''
     pygame.draw.rect(source_surface, RED, (10, 10, 100, 100))  # Где, каким цветом и что рисуем
 
@@ -31,8 +38,14 @@ def main():
     PI = 3.14
     angle = 0
     angle_in_radians = 0
-    speed = 33.3
-    circle = (50, 50, 150, 150)
+    speed = 30
+    max_speed = 180
+    x = 50
+    y = 50
+    w = 100
+    h = 100
+
+    pressed_buttons = []
 
     game_playing = True  # Запущена ли игра
 
@@ -44,9 +57,27 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_playing = False
+            if event.type == pygame.KEYDOWN:
+                pressed_buttons.append(event.key)
+            if event.type == pygame.KEYUP:
+                pressed_buttons.remove(event.key)
+
+        if KEY_W in pressed_buttons:
+            y -= 5
+        if KEY_S in pressed_buttons:
+            y += 5
+        if KEY_A in pressed_buttons:
+            if speed > -max_speed:
+                speed -= 10
+            x -= 5
+        if KEY_D in pressed_buttons:
+            if speed < max_speed:
+                speed += 10
+            x += 5
 
         # Изменение объектов
         source_surface.fill(BLACK)
+        circle = (x, y, w, h)
         pygame.draw.ellipse(source_surface, YELLOW, circle)
         pygame.draw.arc(source_surface, GRAY, circle, 0 + angle_in_radians, PI + angle_in_radians, 5)
         pygame.draw.arc(source_surface, GRAY, circle, PI / 2 + angle_in_radians, PI + angle_in_radians, 10)
@@ -56,6 +87,7 @@ def main():
 
         # Обновление экрана
         pygame.display.update()
+        print(pressed_buttons)
 
     pygame.quit()
 
