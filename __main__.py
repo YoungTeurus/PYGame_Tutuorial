@@ -59,6 +59,7 @@ class WorldObject:
         pass
 
 
+# Класс объекта с текстурами
 class SpritedObject(WorldObject, pygame.sprite.Sprite):
     w = None
     h = None
@@ -74,28 +75,27 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
         if size is not None:
             self.w = size[0]
             self.h = size[1]
-            self.rect.x -= int(self.w/2)
-            self.rect.y -= int(self.h/2)
+            self.rect.x -= int(self.w / 2)
+            self.rect.y -= int(self.h / 2)
             self.need_to_scale = True
 
     def draw(self, camera=None):
-        scaled_surface = None
+        surface_to_draw = None
+        rect_to_draw = None
+
         if self.need_to_scale:
-            scaled_surface = pygame.transform.scale(self.image, (self.w, self.h))
-        dx, dy = 0, 0
+            surface_to_draw = pygame.transform.scale(self.image, (self.w, self.h))
+        else:
+            surface_to_draw = self.image
+
         if camera is not None:
             rect_to_draw = pygame.Rect.copy(self.rect)
             rect_to_draw.x += camera.x
             rect_to_draw.y += camera.y
-            if self.need_to_scale:
-                self.surface.blit(scaled_surface, rect_to_draw)
-                return
-            self.surface.blit(self.image, rect_to_draw)
-            return
-        if self.need_to_scale:
-            self.surface.blit(scaled_surface, self.rect)
-            return
-        self.surface.blit(self.image, self.rect)
+        else:
+            rect_to_draw = self.rect
+
+        self.surface.blit(surface_to_draw, rect_to_draw)
 
 
 # Класс игрока, хранящий камеру
