@@ -59,6 +59,45 @@ class WorldObject:
         pass
 
 
+class SpritedObject(WorldObject, pygame.sprite.Sprite):
+    w = None
+    h = None
+    need_to_scale = False
+
+    def __init__(self, surface, x, y, image, size=None):
+        WorldObject.__init__(self, surface, x, y)
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x += self.x
+        self.rect.y += self.y
+        if size is not None:
+            self.w = size[0]
+            self.h = size[1]
+            self.rect.x -= int(self.w/2)
+            self.rect.y -= int(self.h/2)
+            self.need_to_scale = True
+
+    def draw(self, camera=None):
+        scaled_surface = None
+        if self.need_to_scale:
+            scaled_surface = pygame.transform.scale(self.image, (self.w, self.h))
+        dx, dy = 0, 0
+        if camera is not None:
+            rect_to_draw = pygame.Rect.copy(self.rect)
+            rect_to_draw.x += camera.x
+            rect_to_draw.y += camera.y
+            if self.need_to_scale:
+                self.surface.blit(scaled_surface, rect_to_draw)
+                return
+            self.surface.blit(self.image, rect_to_draw)
+            return
+        if self.need_to_scale:
+            self.surface.blit(scaled_surface, self.rect)
+            return
+        self.surface.blit(self.image, self.rect)
+
+
 # Класс игрока, хранящий камеру
 class Player(WorldObject):
     speed = 5
@@ -95,6 +134,9 @@ def main():
     clock = pygame.time.Clock()
     FPS = 30
 
+    # Предзагрузка картинок
+    img_1 = pygame.image.load("C:\\Users\\s_aza\\PycharmProjects\\PYGame_Tutuorial\\test.png").convert_alpha()
+
     objects = []
 
     game_playing = True  # Запущена ли игра
@@ -118,7 +160,13 @@ def main():
 
         if mouse_pressed[0]:
             if not object_placed:
-                objects.append(WorldObject(window, mouse_pos[0]-player.camera.x, mouse_pos[1]-player.camera.y))
+                # objects.append(WorldObject(window, mouse_pos[0] - player.camera.x, mouse_pos[1] - player.camera.y))
+                objects.append(SpritedObject(window,
+                                             mouse_pos[0] - player.camera.x,
+                                             mouse_pos[1] - player.camera.y,
+                                             img_1, (32, 32)
+                                             )
+                               )
                 object_placed = True  # Запрещаем создавать новые объекты до отжатия ЛКМ
         else:
             object_placed = False
