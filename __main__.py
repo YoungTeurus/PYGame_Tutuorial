@@ -1,5 +1,19 @@
 import pygame
 import random
+import inspect
+import os
+import sys
+
+
+def get_script_dir(follow_symlinks=True):
+    if getattr(sys, 'frozen', False):  # py2exe, PyInstaller, cx_Freeze
+        path = os.path.abspath(sys.executable)
+    else:
+        path = inspect.getabsfile(get_script_dir)
+    if follow_symlinks:
+        path = os.path.realpath(path)
+    return os.path.dirname(path)
+
 
 random.seed()
 
@@ -12,17 +26,24 @@ RED = (255, 0, 0)
 # Размеры окошка
 window_w = 600
 window_h = 400
+FPS = 30
 
 
 # Класс камеры для отрисовки мира?
 class Camera:
+    x = 0
+    y = 0
+    w = window_w
+    h = window_h
+    visible_rect = pygame.Rect(x - 100, y - 100, w + 200, h + 200)
+
     def __init__(self):
-        self.x = 0
-        self.y = 0
+        pass
 
     def move(self, dx, dy):
         self.x += dx
         self.y += dy
+        self.visible_rect.x, self.visible_rect.y = -self.x, -self.y
 
 
 # Класс объекта игрового мира, содержит методы draw и tick
@@ -83,11 +104,7 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
         surface_to_draw = None
         rect_to_draw = None
 
-        if self.need_to_scale:
-            surface_to_draw = pygame.transform.scale(self.image, (self.w, self.h))
-        else:
-            surface_to_draw = self.image
-
+        need_to_draw = False
         if camera is not None:
             rect_to_draw = pygame.Rect.copy(self.rect)
             rect_to_draw.x += camera.x
@@ -95,7 +112,18 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
         else:
             rect_to_draw = self.rect
 
-        self.surface.blit(surface_to_draw, rect_to_draw)
+        if self.rect.colliderect(camera.visible_rect):
+            need_to_draw = True
+
+        if need_to_draw:
+            if self.need_to_scale:
+                surface_to_draw = pygame.transform.scale(self.image, (self.w, self.h))
+            else:
+                surface_to_draw = self.image
+
+            self.surface.blit(surface_to_draw, rect_to_draw)
+            return True
+        return False
 
 
 # Класс игрока, хранящий камеру
@@ -132,12 +160,15 @@ def main():
     window = pygame.display.set_mode((window_w, window_h))  # Основная поверхность
     pygame.display.set_caption("My game")
     clock = pygame.time.Clock()
-    FPS = 30
 
     # Предзагрузка картинок
-    img_1 = pygame.image.load("C:\\Users\\s_aza\\PycharmProjects\\PYGame_Tutuorial\\test.png").convert_alpha()
+    directory_to_load = get_script_dir()
+    enemy_1_img = pygame.image.load(directory_to_load + "\\enemy_1.png").convert_alpha()
+    floor_img = pygame.image.load(directory_to_load + "\\floor.png").convert_alpha()
 
-    objects = []
+    # Объявление карты и массива объектов
+    map_tiles = []  # Карта, представляющая собой "пол"
+    objects = []  # Все объекты, отрисовываемые на карте
 
     game_playing = True  # Запущена ли игра
     object_placed = False  # Флаг для установки объекта
@@ -146,9 +177,18 @@ def main():
     player = Player(window, window_w / 2, window_h / 2, Camera())
     objects.append(player)
 
+    # Заполнение карты
+    for i in range(50):
+        for j in range(50):
+            map_tiles.append(SpritedObject(window,
+                                           i * 16, j * 16, floor_img, (16, 16)
+                                           )
+                             )
+
     while game_playing:
 
         clock.tick(FPS)  # Требуемый FPS и соответствующая задержка
+        window.fill(BLACK)
 
         # Обработка событий:
         for event in pygame.event.get():
@@ -164,7 +204,7 @@ def main():
                 objects.append(SpritedObject(window,
                                              mouse_pos[0] - player.camera.x,
                                              mouse_pos[1] - player.camera.y,
-                                             img_1, (32, 32)
+                                             enemy_1_img, (32, 34)
                                              )
                                )
                 object_placed = True  # Запрещаем создавать новые объекты до отжатия ЛКМ
@@ -181,11 +221,17 @@ def main():
         if keyboard_pressed[pygame.K_s]:
             player.player_move('down')
 
+        # Отрисовка карты
+        num_of_drawn_objects = 0
+        for tile in map_tiles:
+            if tile.draw(player.camera):
+                num_of_drawn_objects += 1
         # Отрисовка объектов
-        window.fill(BLACK)
         objects.sort()
         for obj in objects:
-            obj.draw(player.camera)
+            if obj.draw(player.camera):  # Если объект был отрисован
+                num_of_drawn_objects += 1
+        print(num_of_drawn_objects)
 
         # Такт игры
         for obj in objects:
