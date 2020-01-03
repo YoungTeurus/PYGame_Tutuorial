@@ -103,8 +103,8 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
             self.need_to_scale = True
 
     def draw(self, camera=None):
-        surface_to_draw = None
-        rect_to_draw = None
+        # surface_to_draw = None
+        # rect_to_draw = None
 
         need_to_draw = False
         if camera is not None:
