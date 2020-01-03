@@ -1,4 +1,7 @@
 import pygame
+import random
+
+random.seed()
 
 # Цвета
 WHITE = (255, 255, 255)
@@ -18,12 +21,22 @@ class WorldObject:
         self.surface = surface
         self.x = x
         self.y = y
+        self.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
     def draw(self):
-        pygame.draw.rect(self.surface, RED, (self.x - (self.w / 2),
-                                             self.y - (self.h / 2),
-                                             self.w,
-                                             self.h))
+        pygame.draw.rect(self.surface, self.color,
+                         (int(self.x - (self.w / 2)),
+                          int(self.y - (self.h / 2)),
+                          int(self.w),
+                          int(self.h))
+                         )
+
+    def move(self, dx, dy):
+        self.x += dx
+        self.y += dy
+
+    def __lt__(self, other):
+        return self.y < other.y
 
     def tick(self):
         pass
@@ -42,6 +55,11 @@ def main():
     objects = []
 
     game_playing = True  # Запущена ли игра
+    object_placed = False  # Флаг для установки объекта
+
+    # Игрок
+    Player = WorldObject(window, window_w / 2, window_h / 2)
+    objects.append(Player)
 
     while game_playing:
 
@@ -53,11 +71,28 @@ def main():
                 game_playing = False
         mouse_pressed = pygame.mouse.get_pressed()
         mouse_pos = pygame.mouse.get_pos()
+        keyboard_pressed = pygame.key.get_pressed()
 
         if mouse_pressed[0]:
-            objects.append(WorldObject(window, mouse_pos[0], mouse_pos[1]))
+            if not object_placed:
+                objects.append(WorldObject(window, mouse_pos[0], mouse_pos[1]))
+                object_placed = True
+        else:
+            object_placed = False
+
+        # Обработка событий клавиатуры
+        if keyboard_pressed[pygame.K_a]:
+            Player.move(-1, 0)
+        if keyboard_pressed[pygame.K_d]:
+            Player.move(1, 0)
+        if keyboard_pressed[pygame.K_w]:
+            Player.move(0, -1)
+        if keyboard_pressed[pygame.K_s]:
+            Player.move(0, 1)
 
         # Отрисовка объектов
+        window.fill(BLACK)
+        objects.sort()
         for obj in objects:
             obj.draw()
 
