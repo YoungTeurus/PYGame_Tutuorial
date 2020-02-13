@@ -1,9 +1,25 @@
 import random
 import pygame
+import inspect
+import os
+import sys
+import re
 
-# Настройки
 from __main__ import window_w, window_h
 
+
+# Возвращает путь до папки скрипта
+def get_script_dir(follow_symlinks=True):
+    if getattr(sys, 'frozen', False):  # py2exe, PyInstaller, cx_Freeze
+        path = os.path.abspath(sys.executable)
+    else:
+        path = inspect.getabsfile(get_script_dir)
+    if follow_symlinks:
+        path = os.path.realpath(path)
+    return os.path.dirname(path)
+
+
+# Настройки
 ticks_before_change_frame = 5  # Сколько тиков должно пройти перед сменой кадра
 
 
@@ -60,7 +76,7 @@ class WorldObject:
         pass
 
     def __str__(self):
-        return "(WorldObject,({x},{y}))".format(**{'x': self.x,
+        return "(WorldObject;({x},{y}))".format(**{'x': self.x,
                                                    'y': self.y})
 
 
@@ -71,10 +87,18 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
     need_to_scale = False
     looking_left = False
 
-    def __init__(self, surface, x, y, image, size=None):
+    def __init__(self, surface, x, y, image_location=None, size=None):
         WorldObject.__init__(self, surface, x, y)
         pygame.sprite.Sprite.__init__(self)
-        self.image = image
+        # self.image = image_location
+        self.image_location = None
+        if image_location is not None:  # Такое может произойти только при загрузке наследующих классов
+            self.image_location = image_location
+            path_to_image = get_script_dir() + image_location
+            try:
+                self.image = pygame.image.load(path_to_image)
+            except pygame.error:
+                print("Can't find {} !".format(path_to_image))
         self.rect = self.image.get_rect()
         self.rect.x += int(self.x)
         self.rect.y += int(self.y)
@@ -113,15 +137,35 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
             return True
         return False
 
+    def __str__(self):
+        return "(SpritedObject;({x},{y});{image_location}; ({w},{h}))".format(**{'x': self.x,
+                                                                                 'y': self.y,
+                                                                                 'image_location': self.image_location,
+                                                                                 'w': self.w,
+                                                                                 'h': self.h}
+                                                                              )
+
 
 # Класс объекта с анимацией
 class AnimatedObject(SpritedObject):
     frame = 0
     timer = 0
 
-    def __init__(self, surface, x, y, image_list, size=None):
-        SpritedObject.__init__(self, surface, x, y, image_list[0], size)
-        self.image_list = image_list
+    def __init__(self, surface, x, y, image_list_location, size=None):
+        self.image_list = []
+        self.image_list_location = image_list_location
+        # Необходимо получить массив загруженных картинок
+        # Получаем список файлов в переменную files
+        script_dir = get_script_dir()
+        files = os.listdir(script_dir + image_list_location)
+        # Фильтруем список
+        images = filter(lambda al: al.endswith('.png'), files)
+        for image in images:
+            self.image_list.append(pygame.image.load(script_dir + image_list_location + image))
+
+        # Устанавливаем первый кадр, как исходное изображение
+        self.image = self.image_list[0]
+        SpritedObject.__init__(self, surface, x, y, None, size)
         self.len_of_image_list = len(self.image_list)
 
     def move(self, dx, dy):
@@ -144,6 +188,14 @@ class AnimatedObject(SpritedObject):
         self.frame = (self.frame + frames_to_skip) % self.len_of_image_list
         self.image = self.image_list[self.frame]
 
+    def __str__(self):
+        return "(AnimatedObject;({x},{y});{image_list_location}; ({w},{h}))".format(**{'x': self.x,
+                                                                                       'y': self.y,
+                                                                                       'image_list_location': self.image_list_location,
+                                                                                       'w': self.w,
+                                                                                       'h': self.h}
+                                                                                    )
+
 
 # Класс текстового объекта
 class TextObject(WorldObject):
@@ -163,3 +215,22 @@ class TextObject(WorldObject):
 
     def set_text(self, text):
         self.text = text
+
+    def __str__(self):
+        return "(TextObject;({x},{y});{text})".format(**{'x': self.x,
+                                                         'y': self.y,
+                                                         'text': self.text}
+                                                      )
+
+
+# Метод, преобразующий строку в объект
+def parse_object_str(str):
+    avaliable_classes = ["WorldObject",
+                         "SpritedObject",
+                         "AnimatedObject"
+                         "TextObject",
+                         "Player"]
+    check_for_brackets = re.search(r"(.+)", "(w)")
+    if check_for_brackets[0] is not None:
+        arr = re.findall(r"[^;]+", str[1:-1])
+        print(arr)

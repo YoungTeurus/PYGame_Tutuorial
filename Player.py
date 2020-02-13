@@ -3,6 +3,8 @@ from __main__ import window_w, window_h
 
 # Настройки
 percent_of_running_animation = 0.5  # На сколько процентов от максимальной скорости
+
+
 # должен двигаться игрок, чтобы ускорить анимацию
 
 
@@ -14,13 +16,14 @@ class Player(AnimatedObject):
     float_acceleration = 0
     is_moving = False
 
-    def __init__(self, surface, x, y, camera, image_list, size=None):
-        super().__init__(surface, x, y, image_list, size)
+    def __init__(self, surface, x, y, camera, image_list_location, size=None):
+        super().__init__(surface, x, y, image_list_location, size)
         self.camera = camera
 
     def player_move(self, direction):
         if self.is_moving is not True:  # Если игрок только начал двигаться
             self.float_acceleration = 0.1  # Придаём начальное ускорение
+            self.float_current_speed = 1
         else:
             self.float_acceleration *= 1.005
         if self.float_acceleration > self.max_speed:  # Ограничиваем макс. скорость
@@ -70,3 +73,10 @@ class Player(AnimatedObject):
     def stop_moving(self):
         self.is_moving = False
 
+    def __str__(self):
+        return "(Player;({x},{y});{image_list_location}; ({w},{h}))".format(**{'x': self.x,
+                                                                               'y': self.y,
+                                                                               'image_list_location': self.image_list_location,
+                                                                               'w': self.w,
+                                                                               'h': self.h}
+                                                                            )
