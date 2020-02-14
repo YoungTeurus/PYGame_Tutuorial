@@ -96,6 +96,11 @@ def main():
             if keyboard_pressed[pygame.K_s]:
                 player.player_move('down')
                 is_move_button_pressed = True
+        if keyboard_pressed[pygame.K_p]:
+            for obj in objects:
+                print(obj)
+            str = input()
+            objects.append(parse_object_str(window, str))
         if is_move_button_pressed is not True:  # Если отпущены все клавиши движения
             player.stop_moving()  # Прекращаем двигаться
 
@@ -124,9 +129,10 @@ def main():
         # Обновление экрана
         pygame.display.update()
 
-    for obj in objects:
-        print(obj)
-        parse_object_str(str(obj))
+    #for obj in objects:
+    #    # print(obj)
+    #    new_obj = parse_object_str(window, str(obj))
+    #    print(new_obj)
     pygame.quit()
 
 

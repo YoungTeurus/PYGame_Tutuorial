@@ -223,14 +223,32 @@ class TextObject(WorldObject):
                                                       )
 
 
+from Player import Player
+
+
 # Метод, преобразующий строку в объект
-def parse_object_str(str):
-    avaliable_classes = ["WorldObject",
+def parse_object_str(surface, str):
+    avaliable_classes = ("WorldObject",
                          "SpritedObject",
                          "AnimatedObject"
                          "TextObject",
-                         "Player"]
+                         "Player")
+    # Словарь, в котором хранятся "указатели" на классы и количество принимаемых аргументов
+    #avaliable_classes = {"WorldObject": [WorldObject,2],
+    #                     "SpritedObject": [SpritedObject, 5],
+    #                     "AnimatedObject": [AnimatedObject, 5],
+    #                     "TextObject": [TextObject, 3],
+    #                     "Player": [Player, 5]
+    #                     }
+    #returned_object = avaliable_classes["WorldObject"][0](avaliable_classes["WorldObject"][1],)
     check_for_brackets = re.search(r"(.+)", "(w)")
     if check_for_brackets[0] is not None:
-        arr = re.findall(r"[^;]+", str[1:-1])
+        arr = re.findall(r"[^;]+", str[1:-1])  # Массив параметров
+        arr[1] = arr[1][1:-1].split(",")
         print(arr)
+        # if arr[0] in avaliable_classes:  # Если первый параметр есть в списке классов
+        if arr[0] == "WorldObject":
+            return WorldObject(surface, arr[1][0], arr[1][1])
+        if arr[0] == "AnimatedObject":
+            return AnimatedObject(surface, float(arr[1][0]), float(arr[1][1]), arr[2])
+    return None  # Не возвращаем объект
