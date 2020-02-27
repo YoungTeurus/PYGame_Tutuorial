@@ -44,6 +44,7 @@ class Camera:
 class WorldObject:
     w = 25
     h = 25
+    id = -1
 
     def __init__(self, surface, x, y):
         self.surface = surface
@@ -63,6 +64,12 @@ class WorldObject:
         #                  int(self.h))
         #                 )
         pass
+
+    def set_id(self, id):
+        self.id = id
+
+    def get_id(self, id):
+        return id
 
     def move(self, dx, dy):
         self.x += dx
@@ -103,11 +110,12 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
         self.rect.x += int(self.x)
         self.rect.y += int(self.y)
         if size is not None:
-            self.w = size[0]
-            self.h = size[1]
+            self.w, self.h = size[0], size[1]
             self.rect.x -= int(self.w / 2)
             self.rect.y -= int(self.h / 2)
             self.need_to_scale = True
+        else:
+            self.w, self.h = self.rect.w, self.rect.h
 
     def draw(self, camera=None):
         # surface_to_draw = None
@@ -145,6 +153,11 @@ class SpritedObject(WorldObject, pygame.sprite.Sprite):
                                                                                  'h': self.h}
                                                                               )
 
+    def move(self, dx, dy):
+        super().move(dx, dy)
+        self.rect.x = int(self.x - (self.w / 2))
+        self.rect.y = int(self.y - (self.h / 2))
+
 
 # Класс объекта с анимацией
 class AnimatedObject(SpritedObject):
@@ -167,11 +180,6 @@ class AnimatedObject(SpritedObject):
         self.image = self.image_list[0]
         SpritedObject.__init__(self, surface, x, y, None, size)
         self.len_of_image_list = len(self.image_list)
-
-    def move(self, dx, dy):
-        super().move(dx, dy)
-        self.rect.x = int(self.x - (self.w / 2))
-        self.rect.y = int(self.y - (self.h / 2))
 
     def tick(self):
         self.timer += 1
@@ -223,7 +231,23 @@ class TextObject(WorldObject):
                                                       )
 
 
-from Player import Player
+# Класс движущегося объекта (вроде пули)
+class MovingObject(SpritedObject):
+    speed_x = 0
+    speed_y = 0
+
+    def __init__(self, surface, x, y, image_location=None, size=None):
+        super().__init__(surface, x, y, image_location, size)
+
+    def set_speed(self, dx, dy):
+        self.speed_x = dx
+        self.speed_y = dy
+
+    def tick(self):
+        self.move(self.speed_x, self.speed_y)
+
+
+# from Player import Player
 
 
 # Метод, преобразующий строку в объект
@@ -234,13 +258,13 @@ def parse_object_str(surface, str):
                          "TextObject",
                          "Player")
     # Словарь, в котором хранятся "указатели" на классы и количество принимаемых аргументов
-    #avaliable_classes = {"WorldObject": [WorldObject,2],
+    # avaliable_classes = {"WorldObject": [WorldObject,2],
     #                     "SpritedObject": [SpritedObject, 5],
     #                     "AnimatedObject": [AnimatedObject, 5],
     #                     "TextObject": [TextObject, 3],
     #                     "Player": [Player, 5]
     #                     }
-    #returned_object = avaliable_classes["WorldObject"][0](avaliable_classes["WorldObject"][1],)
+    # returned_object = avaliable_classes["WorldObject"][0](avaliable_classes["WorldObject"][1],)
     check_for_brackets = re.search(r"(.+)", "(w)")
     if check_for_brackets[0] is not None:
         arr = re.findall(r"[^;]+", str[1:-1])  # Массив параметров

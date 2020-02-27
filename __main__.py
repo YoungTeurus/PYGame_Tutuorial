@@ -5,7 +5,10 @@ import random
 window_w = 600
 window_h = 400
 
-from Objects import Camera, SpritedObject, AnimatedObject, TextObject, parse_object_str
+# Уникальные ID(?)
+PLAYER1_ID = 0
+
+from Objects import Camera, SpritedObject, AnimatedObject, TextObject, parse_object_str, MovingObject
 from Player import Player
 
 random.seed()
@@ -37,7 +40,11 @@ def main():
 
     # Игрок
     player = Player(window, window_w / 2, window_h / 2, Camera(), "\\sprites\\knight_f_idle_anim\\", (16, 28))
+    player.set_id(PLAYER1_ID)
     objects.append(player)
+
+    timeout_before_shooting = 100  # Время до стрельбы
+    current_timeout_before_shooting = 0  # Текущее время до стрельбы
 
     # Заполнение карты
     for i in range(50):
@@ -96,11 +103,23 @@ def main():
             if keyboard_pressed[pygame.K_s]:
                 player.player_move('down')
                 is_move_button_pressed = True
-        if keyboard_pressed[pygame.K_p]:
-            for obj in objects:
-                print(obj)
-            str = input()
-            objects.append(parse_object_str(window, str))
+        # Стрельба
+        if keyboard_pressed[pygame.K_SPACE]:
+            if current_timeout_before_shooting == 0:
+                bul = MovingObject(window, player.x, player.y, "\\sprites\\bullet.png")
+                objects.append(bul)
+                if player.looking_left:
+                    bul.set_speed(-5, 0)
+                else:
+                    bul.set_speed(5, 0)
+                current_timeout_before_shooting = timeout_before_shooting
+
+        # Отладка парсера
+        # if keyboard_pressed[pygame.K_p]:
+        #    for obj in objects:
+        #        print(obj)
+        #    str = input()
+        #    objects.append(parse_object_str(window, str))
         if is_move_button_pressed is not True:  # Если отпущены все клавиши движения
             player.stop_moving()  # Прекращаем двигаться
 
@@ -119,6 +138,8 @@ def main():
         # Такт игры
         for obj in objects:
             obj.tick()
+        if current_timeout_before_shooting > 0:
+            current_timeout_before_shooting -= 1
 
         # Изменение показаний дебаг-информации
         debug_text_player_position.set_text("Player position: ({},{})".format(
